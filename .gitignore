@@ -1,0 +1,10 @@
+# Generated install archive
+/ClappingCat.zip
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+
+# macOS metadata
+.DS_Store
