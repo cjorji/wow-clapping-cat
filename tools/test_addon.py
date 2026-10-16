@@ -24,7 +24,7 @@ def runtime(modern=True, saved=None):
         function methods:SetText(value) self.text = value end
         function methods:SetAlpha(value) self.alpha = value end
         function methods:SetOrientation() end
-        function methods:SetMinMaxValues() end
+        function methods:SetMinMaxValues(low, high) self.minimum, self.maximum = low, high end
         function methods:SetValueStep() end
         function methods:SetObeyStepOnDrag() end
         function methods:SetColorTexture() end
@@ -33,8 +33,9 @@ def runtime(modern=True, saved=None):
             self.value = value
             if self.scripts.OnValueChanged then self.scripts.OnValueChanged(self, value) end
         end
-        function methods:SetSize() end
-        function methods:SetPoint() end
+        function methods:SetSize(width, height) self.width, self.height = width, height end
+        function methods:SetPoint(...) self.point = {...} end
+        function methods:ClearAllPoints() self.point = nil end
         function methods:SetFrameStrata() end
         function methods:EnableMouse() end
         function methods:SetAllPoints() end
@@ -160,7 +161,7 @@ for modern in (True, False):
         registeredPanel.scripts.OnShow(registeredPanel)
         local count = 0
         for _, frame in ipairs(frames) do
-            if frame.kind == 'CheckButton' then
+            if frame.template == 'InterfaceOptionsCheckButtonTemplate' then
                 count = count + 1
                 frame:SetChecked(false)
                 frame.scripts.OnClick(frame)
@@ -171,7 +172,7 @@ for modern in (True, False):
         for _, frame in ipairs(frames) do
             if frame.kind == 'Slider' then table.insert(sliders, frame) end
         end
-        assert(#sliders == 2)
+        assert(#sliders == 3)
         sliders[2]:SetValue(37)
         assert(ClappingCatDB.opacity == 37 and frames[1].alpha == 0.37)
         sliders[1]:SetValue(55)
@@ -187,6 +188,26 @@ for modern in (True, False):
         assert(plays == previousPlays and frames[1].alpha == 0)
         sliders[1]:SetValue(55)
         sliders[2]:SetValue(37)
+        assert(sliders[3].minimum == 50 and sliders[3].maximum == 150)
+        for _, value in ipairs({50, 100, 150}) do
+            sliders[3]:SetValue(value)
+            assert(ClappingCatDB.scale == value and frames[1].width == 360 * value / 50)
+        end
+        local positions = {'TOP', 'TOPLEFT', 'TOPRIGHT', 'BOTTOMLEFT', 'BOTTOMRIGHT'}
+        local radios = {}
+        for _, frame in ipairs(frames) do
+            if frame.template == 'UIRadioButtonTemplate' then table.insert(radios, frame) end
+        end
+        assert(#radios == 5)
+        for index, radio in ipairs(radios) do
+            radio.scripts.OnClick(radio)
+            assert(ClappingCatDB.position == positions[index])
+            assert(frames[1].point[1] == positions[index])
+            for otherIndex, other in ipairs(radios) do
+                assert(other:GetChecked() == (otherIndex == index))
+            end
+        end
+        assert(frames[1]:IsShown())
         SlashCmdList.CLAPPINGCAT('')
         assert(opened ~= nil)
     ''')
@@ -194,13 +215,16 @@ for modern in (True, False):
     reload = runtime(modern, saved)
     reload.execute('''
         assert(ClappingCatDB.volume == 55 and ClappingCatDB.opacity == 37)
+        assert(ClappingCatDB.scale == 150 and ClappingCatDB.position == 'BOTTOMRIGHT')
         for _, key in ipairs({'quest', 'level', 'rare', 'epic', 'legendary'}) do
             assert(ClappingCatDB[key] == false)
         end
     ''')
     migrated = runtime(modern, {'sound': False})
+    migrated.execute("assert(ClappingCatDB.scale == 50 and ClappingCatDB.position == 'TOP')")
     migrated.execute('assert(ClappingCatDB.volume == 0 and ClappingCatDB.opacity == 100 and ClappingCatDB.sound == nil)')
-    invalid = runtime(modern, {'volume': 999, 'opacity': -5})
+    invalid = runtime(modern, {'volume': 999, 'opacity': -5, 'scale': 999, 'position': 'INVALID'})
+    invalid.execute("assert(ClappingCatDB.scale == 150 and ClappingCatDB.position == 'TOP')")
     invalid.execute('assert(ClappingCatDB.volume == 100 and ClappingCatDB.opacity == 0)')
     print(('Modern' if modern else 'Legacy') + ' API: triggers, coalescing, cache retries, sliders, mute, migration, and saved preferences passed')
 
@@ -215,7 +239,14 @@ for sheet in sorted((root / 'ClappingCat' / 'Media').glob('*.tga')):
     assert len(raw) == 18 + 1024 * 1024 * 4
     alpha = raw[21::4]
     assert min(alpha) == 0 and max(alpha) == 255
-print('All seven sprite sheets: dimensions, layout, and transparency passed')
+# Every active frame must contain visible pixels, including both sides of sheet boundaries.
+for index in range(102):
+    raw = (root / 'ClappingCat' / 'Media' / f'Cat{index // 16 + 1:02d}.tga').read_bytes()
+    x, y = index % 4 * 256, index % 16 // 4 * 256
+    assert any(raw[18 + ((y + row) * 1024 + x) * 4 + 3:
+                   18 + ((y + row) * 1024 + x + 256) * 4:4].strip(b'\x00')
+               for row in range(256)), f'Blank animation frame {index}'
+print('All seven sprite sheets and 102 active frames: layout, alpha, and nonblank content passed')
 
 audio = sorted((root / 'ClappingCat' / 'Media').glob('Clap*.ogg'))
 assert len(audio) == 20
