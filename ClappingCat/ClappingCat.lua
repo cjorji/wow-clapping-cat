@@ -3,6 +3,15 @@ local media = addon.media
 local path = "Interface\\AddOns\\" .. addonName .. "\\Media\\"
 local defaults = { quest = true, level = true, rare = true, epic = true, legendary = true }
 local qualityKeys = { [3] = "rare", [4] = "epic", [5] = "legendary" }
+local positions = {
+    { "TOP", "Top center", 0, -24 },
+    { "TOPLEFT", "Top left", 24, -24 },
+    { "TOPRIGHT", "Top right", -24, -24 },
+    { "BOTTOMLEFT", "Bottom left", 24, 24 },
+    { "BOTTOMRIGHT", "Bottom right", -24, 24 },
+}
+local positionByKey = {}
+for _, position in ipairs(positions) do positionByKey[position[1]] = position end
 local db, category, options
 local ready = false
 local generations = {}
@@ -17,6 +26,15 @@ cat:EnableMouse(false)
 cat:Hide()
 local texture = cat:CreateTexture(nil, "ARTWORK")
 texture:SetAllPoints()
+
+local function ApplyLayout()
+    -- 50% preserves the original 360 UI-unit frame; 150% is three times as large.
+    local size = 360 * db.scale / 50
+    cat:SetSize(size, size)
+    local position = positionByKey[db.position]
+    cat:ClearAllPoints()
+    cat:SetPoint(position[1], UIParent, position[1], position[3], position[4])
+end
 
 local function Stop()
     cat:Hide()
@@ -47,6 +65,7 @@ local function Play(preview)
     Stop()
     started, currentFrame, currentSheet = GetTime(), nil, nil
     DrawFrame(0)
+    ApplyLayout()
     cat:SetAlpha(db.opacity / 100)
     cat:Show()
     if db.volume > 0 then
@@ -104,19 +123,20 @@ local function CreateOptions()
     for index, choice in ipairs(choices) do
         local key = choice[1]
         local check = CreateFrame("CheckButton", nil, options, "InterfaceOptionsCheckButtonTemplate")
-        check:SetPoint("TOPLEFT", 20, -80 - (index - 1) * 36)
+        check:SetPoint("TOPLEFT", 20, -70 - (index - 1) * 28)
         check.Text:SetText(choice[2])
         check:SetScript("OnClick", function(self)
             db[key] = self:GetChecked() and true or false
         end)
         checks[key] = check
     end
-    local function AddSlider(key, label, y, step)
+    local function AddSlider(key, label, y, step, minimum, maximum)
+        minimum, maximum = minimum or 0, maximum or 100
         local slider = CreateFrame("Slider", nil, options)
         slider:SetSize(280, 20)
         slider:SetPoint("TOPLEFT", 28, y)
         slider:SetOrientation("HORIZONTAL")
-        slider:SetMinMaxValues(0, 100)
+        slider:SetMinMaxValues(minimum, maximum)
         slider:SetValueStep(step)
         slider:SetObeyStepOnDrag(true)
         slider:EnableMouse(true)
@@ -131,32 +151,58 @@ local function CreateOptions()
         local text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         text:SetPoint("BOTTOMLEFT", slider, "TOPLEFT", 0, 4)
         slider:SetScript("OnValueChanged", function(_, value)
-            value = math.max(0, math.min(100, math.floor(value / step + 0.5) * step))
+            value = math.max(minimum, math.min(maximum, math.floor(value / step + 0.5) * step))
             db[key] = value
             text:SetText(label .. ": " .. value .. "%")
             if key == "opacity" then cat:SetAlpha(value / 100)
-            elseif value == 0 and soundHandle then
+            elseif key == "scale" then ApplyLayout()
+            elseif key == "volume" and value == 0 and soundHandle then
                 if StopSound then StopSound(soundHandle) end
                 soundHandle = nil
             end
         end)
         return slider
     end
-    local volume = AddSlider("volume", "Volume", -292, 5)
-    local opacity = AddSlider("opacity", "Opacity", -352, 1)
+    local volume = AddSlider("volume", "Volume", -240, 5)
+    local opacity = AddSlider("opacity", "Opacity", -290, 1)
+    local scale = AddSlider("scale", "Scale (50% = original size)", -340, 5, 50, 150)
+    local positionTitle = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    positionTitle:SetPoint("TOPLEFT", 28, -380)
+    positionTitle:SetText("Position")
+    local selectors = {}
+    local function RefreshPositions()
+        for key, selector in pairs(selectors) do selector:SetChecked(db.position == key) end
+    end
+    for index, position in ipairs(positions) do
+        local key = position[1]
+        local selector = CreateFrame("CheckButton", nil, options, "UIRadioButtonTemplate")
+        selector:SetPoint("TOPLEFT", 28 + ((index - 1) % 3) * 155,
+            -405 - math.floor((index - 1) / 3) * 30)
+        local label = selector:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        label:SetPoint("LEFT", selector, "RIGHT", 4, 0)
+        label:SetText(position[2])
+        selector:SetScript("OnClick", function()
+            db.position = key
+            RefreshPositions()
+            ApplyLayout()
+        end)
+        selectors[key] = selector
+    end
     options:SetScript("OnShow", function()
         for key, check in pairs(checks) do check:SetChecked(db[key]) end
         volume:SetValue(db.volume)
         opacity:SetValue(db.opacity)
+        scale:SetValue(db.scale)
+        RefreshPositions()
     end)
     local preview = CreateFrame("Button", nil, options, "UIPanelButtonTemplate")
     preview:SetSize(140, 28)
-    preview:SetPoint("TOPLEFT", 24, -400)
+    preview:SetPoint("TOPLEFT", 24, -480)
     preview:SetText("Preview cat")
     preview:SetScript("OnClick", function() Play(true) end)
     local hint = options:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", preview, "BOTTOMLEFT", 0, -16)
-    hint:SetText("Volume: 0% mutes; other changes apply on the next playback.\nOpacity updates immediately; 0% hides the cat.\nSound also follows your Master volume.\nCommands: /clapcat test, /clapcat stop")
+    hint:SetText("Scale, position and opacity update immediately.\nVolume changes apply next playback; 0% mutes immediately.\nCommands: /clapcat test, /clapcat stop")
     if Settings and Settings.RegisterCanvasLayoutCategory then
         category = Settings.RegisterCanvasLayoutCategory(options, options.name)
         Settings.RegisterAddOnCategory(category)
@@ -197,7 +243,11 @@ events:SetScript("OnEvent", function(self, event, ...)
         db.volume = math.max(0, math.min(100, math.floor(db.volume / 5 + 0.5) * 5))
         if type(db.opacity) ~= "number" or db.opacity ~= db.opacity then db.opacity = 100 end
         db.opacity = math.max(0, math.min(100, math.floor(db.opacity + 0.5)))
+        if type(db.scale) ~= "number" or db.scale ~= db.scale then db.scale = 50 end
+        db.scale = math.max(50, math.min(150, math.floor(db.scale / 5 + 0.5) * 5))
+        if not positionByKey[db.position] then db.position = "TOP" end
         db.sound = nil
+        ApplyLayout()
         CreateOptions()
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_ENTERING_WORLD" then

@@ -7,7 +7,7 @@ A transparent animated cat and the original clip's audio celebrate:
 - Equipping Rare (blue), Epic (purple), or Legendary (orange) items
 
 Each trigger has its own checkbox under **Settings → AddOns → Clapping Cat**.
-All five start enabled. Volume and opacity sliders and a preview button are included.
+All five start enabled. Volume, opacity, and scale sliders, five position selectors, and a preview button are included.
 Preferences are saved across characters on the same account.
 
 ## Install
@@ -27,7 +27,11 @@ Existing disabled sound settings migrate to 0% volume.
 
 ## Behavior
 
-The full clip plays once, at screen center, with click-through enabled. Triggers
+The full clip plays once with click-through enabled. Top center is the default
+position; top left, top right, bottom left, and bottom right are also available.
+The scale slider spans 50–150% in 5% steps: 50% preserves the original size,
+100% doubles it, and 150% triples it. Scale defaults to 50%. Scale and position
+changes apply immediately during playback and persist across reloads. Triggers
 during playback share the existing celebration instead of stacking or restarting.
 Preview always restarts playback. Equipping an item triggers even if it is not an
 upgrade; looting, removing gear, or merely having it equipped on login does not.
@@ -40,7 +44,10 @@ objective in the quest log.
 The manifest currently targets Forever interface `16001`; the user's exact build
 is still unconfirmed. Settings registration includes modern Settings and legacy
 Interface Options paths, and item queries support both namespaced and global APIs.
-This is not yet verified in a running WoW client. Modern Classic/Retail versions
+The v0.1.0 release was tested in-game by the user; occasional blank animation
+frames were reported. All 102 source frames contain visible pixels, so the cause
+of that flicker remains unconfirmed. The new scale and position controls have
+automated coverage but still need in-game testing. Modern Classic/Retail versions
 may work after setting the appropriate `Interface` value or enabling out-of-date
 addons; compatibility with every version, especially original vanilla clients,
 is not claimed.
@@ -54,8 +61,9 @@ In-game acceptance checks:
 - Trigger two events during playback and confirm there is only one sound.
 - Set Volume to 0% and confirm animation still works without sound.
 - Set Volume to 25%, 50%, and 100%, preview each, and compare loudness.
-- Adjust Opacity during preview and confirm visibility changes immediately.
-- Reload and confirm both slider settings persist.
+- Adjust Opacity and Scale during preview and confirm changes apply immediately.
+- Check all five positions at 50%, 100%, and 150% scale and confirm placement.
+- Reload and confirm all slider settings and the selected position persist.
 
 ## Assets and rebuilding
 
