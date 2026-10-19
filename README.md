@@ -1,82 +1,49 @@
 # Clapping Cat
 
-A transparent animated cat and the original clip's audio celebrate:
+Celebrate your adventures in WoW Forever with the clapping cat meme, complete with a transparent animation and sound.
 
-- Quest turn-ins
-- Level ups
-- Equipping Rare (blue), Epic (purple), or Legendary (orange) items
+## Features
 
-Each trigger has its own checkbox under **Settings → AddOns → Clapping Cat**.
-All five start enabled. Volume, opacity, and scale sliders, five position selectors, and a preview button are included.
-Preferences are saved across characters on the same account.
+Choose when the cat appears:
 
-## Install
+- Completing a quest (turning it in).
+- Leveling up.
+- Equipping a Rare (blue), Epic (purple), or Legendary (orange) item.
 
-1. Exit WoW.
-2. Extract `ClappingCat.zip` into your chosen WoW client's `Interface/AddOns/` directory.
-3. Confirm the resulting path is `Interface/AddOns/ClappingCat/ClappingCat.toc` (avoid an extra nested folder).
+Each trigger can be enabled separately. Customize the cat with volume, opacity, and scale sliders, plus five screen positions: top center, top left, top right, bottom left, and bottom right.
+
+## Download & Installation
+
+1. Open the [latest release](https://github.com/cjorji/wow-clapping-cat/releases/latest) and download the **ClappingCat-vX.Y.Z.zip** attachment.
+2. Exit WoW and extract the **ClappingCat** folder into your client's **Interface/AddOns/** folder.
+3. Replace existing addon files when updating.
 4. Start WoW and enable **Clapping Cat** in the AddOns list.
-5. Type `/clapcat test` to check animation and sound, or `/clapcat` to open its options.
 
-`/clapcat stop` stops the current celebration. Sound uses the Master channel and
-respects the game's master sound toggle and volume. The addon volume slider uses
-5% steps; 0% mutes and stops any active clapping. Other volume changes apply on
-the next playback. Opacity uses 1% steps and updates immediately, including during
-a preview; 0% hides the cat without muting it. Both default to 100% and are saved.
-Existing disabled sound settings migrate to 0% volume.
+The final folder structure should be `Interface/AddOns/ClappingCat/ClappingCat.toc`.
 
-## Behavior
+## Usage
 
-The full clip plays once with click-through enabled. Top center is the default
-position; top left, top right, bottom left, and bottom right are also available.
-The scale slider spans 50–150% in 5% steps: 50% preserves the original size,
-100% doubles it, and 150% triples it. Scale defaults to 50%. Scale and position
-changes apply immediately during playback and persist across reloads. Triggers
-during playback share the existing celebration instead of stacking or restarting.
-Preview always restarts playback. Equipping an item triggers even if it is not an
-upgrade; looting, removing gear, or merely having it equipped on login does not.
-Re-equipping gear or using an equipment set can trigger a celebration.
-Quest completion means the rewarded turn-in event, rather than finishing the last
-objective in the quest log.
+Type `/clapcat` or open **Settings → AddOns → Clapping Cat** to configure the addon.
 
-## Compatibility and testing
+- **Preview:** use the **Preview cat** button or `/clapcat test`.
+- **Stop playback:** type `/clapcat stop`.
+- **Volume:** 0–100%; 0% mutes. Other volume changes apply on the next playback. The game's Master volume also applies.
+- **Opacity:** 0–100%; 0% hides the cat without muting it.
+- **Scale:** 50–150%; 50% is the original size, 100% doubles it, and 150% triples it.
+- **Position:** select one of the five positions. Top center is the default.
 
-The manifest currently targets Forever interface `16001`; the user's exact build
-is still unconfirmed. Settings registration includes modern Settings and legacy
-Interface Options paths, and item queries support both namespaced and global APIs.
-The v0.1.0 release was tested in-game by the user; occasional blank animation
-frames were reported. All 102 source frames contain visible pixels, so the cause
-of that flicker remains unconfirmed. The new scale and position controls have
-automated coverage but still need in-game testing. Modern Classic/Retail versions
-may work after setting the appropriate `Interface` value or enabling out-of-date
-addons; compatibility with every version, especially original vanilla clients,
-is not claimed.
+Scale, opacity, and position changes take effect immediately. Your settings are saved automatically and shared across characters on the same account.
 
-In-game acceptance checks:
+The cat plays once per celebration. Events that occur during playback share the current celebration. Equipment triggers apply when equipping an item, including re-equipping gear; they do not require an upgrade.
 
-- Preview the cat and confirm the background is transparent and sound plays.
-- Turn each trigger off and verify that event does not play the cat.
-- Turn each on and perform its event, including each equipment quality.
-- Reload and confirm preferences persist and equipped gear stays quiet on login.
-- Trigger two events during playback and confirm there is only one sound.
-- Set Volume to 0% and confirm animation still works without sound.
-- Set Volume to 25%, 50%, and 100%, preview each, and compare loudness.
-- Adjust Opacity and Scale during preview and confirm changes apply immediately.
-- Check all five positions at 50%, 100%, and 150% scale and confirm placement.
-- Reload and confirm all slider settings and the selected position persist.
+## Compatibility & Support
 
-## Assets and rebuilding
+Built for **WoW Forever** (interface 16001). Other WoW versions have not been confirmed compatible.
 
-The addon contains 15 fps, 256-pixel transparent animation frames packed into
-1024×1024, 32-bit TGA sheets, plus 20 OGG audio volume variants. These control only the cat
-audio without changing the game's sound settings. It does not use the large editing MOV
-at runtime. The original transparent master stays in Downloads.
+Occasional blank frames during playback are a known issue under investigation.
 
-Rebuild assets with Python 3 and FFmpeg:
+Found a problem? [Open an issue](https://github.com/cjorji/wow-clapping-cat/issues) and include your addon version, WoW client version, and steps to reproduce it.
 
-```sh
-python3 tools/build_media.py '/path/to/Clapping Cat Meme Transparent.mov'
-```
+## Media
 
-The source clip's ownership/redistribution permissions are not supplied with this
-project. No license to the original cat video or audio is granted here.
+Animation and audio are based on [this clapping cat clip](https://www.youtube.com/shorts/SX2JLYK6xqg). The original media belongs to its respective rights holders.
