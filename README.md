@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/clapping-cat-icon.png" alt="Clapping Cat project icon" width="160" height="160">
+</p>
+
 # Clapping Cat for WoW Forever
 
 A little applause for your adventures. Clapping Cat brings the clapping cat meme into WoW Forever with a transparent animation and sound whenever you have something to celebrate.
